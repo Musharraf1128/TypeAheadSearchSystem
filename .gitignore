@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Generated data
+data/dataset.csv
+
+# Database
+*.db
+
+# Environment
+.env
+
+# Viva prep document (not for submission)
+DESIGN.md
