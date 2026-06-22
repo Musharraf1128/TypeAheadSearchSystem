@@ -198,8 +198,3 @@ TypeAheadSearchSystem/
         └── components/         # UI components
 ```
 
-## Design & Performance
-
-See [PROJECT_REPORT.md](PROJECT_REPORT.md) for the full project report covering architecture, design choices, trade-offs, and performance analysis.
-
-See [DESIGN.md](DESIGN.md) for detailed viva preparation material.
