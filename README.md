@@ -8,25 +8,25 @@ A full-stack, production-style typeahead/autocomplete search system featuring a 
 ┌──────────────────────────────────────────────────────────────────┐
 │                        React Frontend                            │
 │         (Vite + TypeScript, debounced input, keyboard nav)       │
-└────────────────────────┬─────────────────────────────────────────┘
-                         │ HTTP (fetch)
-                         ▼
+└─────────────────────────────┬────────────────────────────────────┘
+                              │ HTTP (fetch)
+                              ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                     Fastify Server (Node.js)                     │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐   │
-│  │ /suggest  │  │ /search  │  │ /cache/* │  │ /metrics      │   │
-│  │ (GET)     │  │ (POST)   │  │ (debug)  │  │ /trending     │   │
-│  └─────┬─────┘  └─────┬────┘  └──────────┘  └───────────────┘   │
+│  ┌───────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐    │
+│  │ /suggest  │  │ /search  │  │ /cache/* │  │ /metrics      │    │
+│  │ (GET)     │  │ (POST)   │  │ (debug)  │  │ /trending     │    │
+│  └─────┬─────┘  └─────┬────┘  └──────────┘  └───────────────┘    │
 │        │              │                                          │
-│  ┌─────▼─────────┐  ┌─▼──────────────┐  ┌───────────────────┐  │
-│  │ Cache-Aside   │  │ Batch Writer   │  │ Trending Engine   │  │
-│  │ (Redis hash)  │  │ (queue+flush)  │  │ (exp. decay)      │  │
-│  └───────┬───────┘  └────────┬───────┘  └───────────────────┘  │
-│          │                   │                                   │
-│  ┌───────▼───────┐  ┌───────▼───────┐                           │
-│  │   Trie        │  │   SQLite      │                           │
-│  │  (in-memory)  │  │  (durable)    │                           │
-│  └───────────────┘  └───────────────┘                           │
+│  ┌─────▼─────────┐  ┌─▼──────────────┐  ┌───────────────────┐    │
+│  │ Cache-Aside   │  │ Batch Writer   │  │ Trending Engine   │    │
+│  │ (Redis hash)  │  │ (queue+flush)  │  │ (exp. decay)      │    │
+│  └───────┬───────┘  └───────┬────────┘  └───────────────────┘    │
+│          │                  │                                    │
+│  ┌───────▼───────┐  ┌───────▼───────┐                            │
+│  │   Trie        │  │   SQLite      │                            │
+│  │  (in-memory)  │  │  (durable)    │                            │
+│  └───────────────┘  └───────────────┘                            │
 └──────────────────────────────────────────────────────────────────┘
                          │
         ┌────────────────┼────────────────┐
@@ -190,6 +190,3 @@ TypeAheadSearchSystem/
         └── components/         # UI components
 ```
 
-## Design Decisions
-
-See [DESIGN.md](DESIGN.md) for detailed architecture documentation, tradeoff analysis, and viva preparation material.
