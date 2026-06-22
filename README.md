@@ -8,9 +8,9 @@ A full-stack, production-style typeahead/autocomplete search system featuring a 
 ┌──────────────────────────────────────────────────────────────────┐
 │                        React Frontend                            │
 │         (Vite + TypeScript, debounced input, keyboard nav)       │
-└─────────────────────────────┬────────────────────────────────────┘
-                              │ HTTP (fetch)
-                              ▼
+└────────────────────────────────┬─────────────────────────────────┘
+                                 │ HTTP (fetch)
+                                 ▼
 ┌──────────────────────────────────────────────────────────────────┐
 │                     Fastify Server (Node.js)                     │
 │  ┌───────────┐  ┌──────────┐  ┌──────────┐  ┌───────────────┐    │
@@ -28,14 +28,14 @@ A full-stack, production-style typeahead/autocomplete search system featuring a 
 │  │  (in-memory)  │  │  (durable)    │                            │
 │  └───────────────┘  └───────────────┘                            │
 └──────────────────────────────────────────────────────────────────┘
-                         │
-        ┌────────────────┼────────────────┐
-        ▼                ▼                ▼
-  ┌──────────┐    ┌──────────┐    ┌──────────┐
-  │ Redis    │    │ Redis    │    │ Redis    │
-  │ :6379    │    │ :6380    │    │ :6381    │
-  └──────────┘    └──────────┘    └──────────┘
-       Consistent Hash Ring (150 virtual nodes/physical)
+                                 │
+                ┌────────────────┼────────────────┐
+                ▼                ▼                ▼
+            ┌──────────┐    ┌──────────┐    ┌──────────┐
+            │ Redis    │    │ Redis    │    │ Redis    │
+            │ :6379    │    │ :6380    │    │ :6381    │
+            └──────────┘    └──────────┘    └──────────┘
+        Consistent Hash Ring (150 virtual nodes/physical)
 ```
 
 ## Tech Stack
@@ -145,6 +145,12 @@ Returns API performance metrics including p50/p95/p99 latencies.
 ### `GET /trending`
 Returns top trending queries with recency scores.
 
+### `GET /suggest/compare?q=<prefix>`
+Compares basic (count-only) vs enhanced (trending-aware) ranking for the same prefix. Demonstrates the difference between the two ranking approaches.
+
+### `GET /batch/stats`
+Shows batch write reduction evidence — how many search events were aggregated into how many DB writes.
+
 ### `GET /health`
 Health check endpoint.
 
@@ -153,6 +159,8 @@ Health check endpoint.
 ```
 TypeAheadSearchSystem/
 ├── docker-compose.yml          # 3 Redis instances
+├── PROJECT_REPORT.md           # Full project report (architecture, API, design, perf)
+├── DESIGN.md                   # Viva preparation document
 ├── scripts/
 │   └── generate-dataset.py     # Dataset generation (wordfreq)
 ├── data/
@@ -176,17 +184,22 @@ TypeAheadSearchSystem/
 │       ├── routes/
 │       │   ├── suggest.ts      # GET /suggest
 │       │   ├── search.ts       # POST /search
-│       │   └── debug.ts        # Debug + metrics routes
+│       │   └── debug.ts        # Debug, metrics, compare, batch routes
 │       └── middleware/
 │           └── metrics.ts      # p95 latency, counters
 └── frontend/
     ├── package.json
     ├── vite.config.ts
     └── src/
-        ├── App.tsx             # Main search component
+        ├── App.tsx             # Main search + trending section
         ├── api.ts              # API client
         ├── types.ts            # TypeScript interfaces
         ├── hooks/              # Custom hooks (debounce, etc.)
         └── components/         # UI components
 ```
 
+## Design & Performance
+
+See [PROJECT_REPORT.md](PROJECT_REPORT.md) for the full project report covering architecture, design choices, trade-offs, and performance analysis.
+
+See [DESIGN.md](DESIGN.md) for detailed viva preparation material.

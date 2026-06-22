@@ -48,6 +48,16 @@ async function main(): Promise<void> {
     try {
       await cacheManager.connect();
       console.log('Cache connected to all Redis nodes.');
+
+      // Log consistent hashing ring distribution (§10: show consistent-hashing behavior)
+      const debugInfo = cacheManager.getDebugInfo('sample');
+      console.log(`\n[Consistent Hashing] Ring size: ${debugInfo.ringSize} virtual nodes (${debugInfo.nodes.length} physical × 150 virtual each)`);
+      console.log('[Consistent Hashing] Sample key routing:');
+      const samplePrefixes = ['a', 'hel', 'the', 'pro', 'z', 'search', 'data'];
+      for (const p of samplePrefixes) {
+        const info = cacheManager.getDebugInfo(p);
+        console.log(`  prefix="${p}" → hash=${info.keyHash} → ${info.node}`);
+      }
     } catch (err) {
       console.warn('Cache connection failed, running without cache:', (err as Error).message);
       cacheManager = null;
@@ -108,13 +118,15 @@ async function main(): Promise<void> {
   try {
     await fastify.listen({ port: PORT, host: HOST });
     console.log(`\n✅ Server listening on http://${HOST}:${PORT}`);
-    console.log(`   Suggest:     GET  http://localhost:${PORT}/suggest?q=<prefix>`);
-    console.log(`   Search:      POST http://localhost:${PORT}/search`);
-    console.log(`   Cache Debug: GET  http://localhost:${PORT}/cache/debug?prefix=<x>`);
-    console.log(`   Cache Stats: GET  http://localhost:${PORT}/cache/stats`);
-    console.log(`   Metrics:     GET  http://localhost:${PORT}/metrics`);
-    console.log(`   Trending:    GET  http://localhost:${PORT}/trending`);
-    console.log(`   Health:      GET  http://localhost:${PORT}/health`);
+    console.log(`   Suggest:      GET  http://localhost:${PORT}/suggest?q=<prefix>`);
+    console.log(`   Compare:      GET  http://localhost:${PORT}/suggest/compare?q=<prefix>`);
+    console.log(`   Search:       POST http://localhost:${PORT}/search`);
+    console.log(`   Cache Debug:  GET  http://localhost:${PORT}/cache/debug?prefix=<x>`);
+    console.log(`   Cache Stats:  GET  http://localhost:${PORT}/cache/stats`);
+    console.log(`   Batch Stats:  GET  http://localhost:${PORT}/batch/stats`);
+    console.log(`   Metrics:      GET  http://localhost:${PORT}/metrics`);
+    console.log(`   Trending:     GET  http://localhost:${PORT}/trending`);
+    console.log(`   Health:       GET  http://localhost:${PORT}/health`);
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

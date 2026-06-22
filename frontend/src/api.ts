@@ -21,3 +21,11 @@ export async function postSearch(query: string): Promise<SearchResponse> {
   }
   return res.json();
 }
+
+export async function fetchTrending(): Promise<{ trending: { query: string; trendingScore: number; recencyScore: number; historicalScore: number }[] }> {
+  const res = await fetch(`${BASE_URL}/trending`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch trending: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}

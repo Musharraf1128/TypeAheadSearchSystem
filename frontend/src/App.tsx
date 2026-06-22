@@ -1,10 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Suggestion } from './types';
-import { fetchSuggestions, postSearch } from './api';
+import { fetchSuggestions, postSearch, fetchTrending } from './api';
 import { useDebounce, useClickOutside, useSlashFocus, useToast } from './hooks';
 import Dropdown from './components/Dropdown';
 import SearchToast from './components/SearchToast';
-import { SearchIcon, XIcon, SparklesIcon, ZapIcon } from './components/Icons';
+import { SearchIcon, XIcon, TrendingIcon } from './components/Icons';
+
+interface TrendingItem {
+  query: string;
+  trendingScore: number;
+  recencyScore: number;
+  historicalScore: number;
+}
 
 function App() {
   // ——— State ———
@@ -16,6 +23,7 @@ function App() {
   const [isFocused, setIsFocused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [totalSearches, setTotalSearches] = useState(0);
+  const [trendingQueries, setTrendingQueries] = useState<TrendingItem[]>([]);
 
   // ——— Refs ———
   const inputRef = useRef<HTMLInputElement>(null);
@@ -27,6 +35,19 @@ function App() {
   const { toast, exiting, showToast } = useToast();
   useClickOutside(containerRef, () => setIsOpen(false));
   useSlashFocus(inputRef);
+
+  // ——— Fetch trending on mount and every 30s ———
+  useEffect(() => {
+    const loadTrending = () => {
+      fetchTrending()
+        .then((data) => setTrendingQueries(data.trending ?? []))
+        .catch(() => {}); // Silently fail if backend not ready
+    };
+
+    loadTrending();
+    const interval = setInterval(loadTrending, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // ——— Fetch suggestions on debounced query change ———
   useEffect(() => {
@@ -142,16 +163,22 @@ function App() {
     inputRef.current?.focus();
   }, []);
 
+  // ——— Click trending query ———
+  const handleTrendingClick = useCallback(
+    (q: string) => {
+      setQuery(q);
+      executeSearch(q);
+    },
+    [executeSearch],
+  );
+
   return (
     <div className="app">
       {/* ——— Hero ——— */}
       <header className="hero">
-        <div className="hero__icon">
-          <SparklesIcon />
-        </div>
         <h1 className="hero__title">TypeAhead Search</h1>
         <p className="hero__subtitle">
-          Lightning-fast suggestions powered by Trie + LRU Cache
+          Prefix suggestions powered by Trie + Consistent Hash Cache
         </p>
       </header>
 
@@ -222,29 +249,47 @@ function App() {
         )}
       </div>
 
+      {/* ——— Trending Searches Section ——— */}
+      <div className="trending-section">
+        <h2 className="trending-section__title">
+          <TrendingIcon style={{ width: 18, height: 18 }} />
+          Trending Searches
+        </h2>
+        {trendingQueries.length === 0 ? (
+          <p className="trending-section__empty">
+            No trending data yet. Start searching to generate trends.
+          </p>
+        ) : (
+          <ul className="trending-section__list">
+            {trendingQueries.slice(0, 10).map((item) => (
+              <li
+                key={item.query}
+                className="trending-section__item"
+                onClick={() => handleTrendingClick(item.query)}
+              >
+                <span className="trending-section__query">{item.query}</span>
+                <span className="trending-section__score">
+                  score: {item.trendingScore.toFixed(2)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
       {/* ——— Stats ——— */}
       {totalSearches > 0 && (
         <div className="stats">
           <div className="stats__item">
             <div className="stats__value">{totalSearches}</div>
-            <div className="stats__label">Searches</div>
-          </div>
-          <div className="stats__item">
-            <div className="stats__value">
-              <ZapIcon style={{ width: 20, height: 20, display: 'inline', verticalAlign: 'middle' }} />
-            </div>
-            <div className="stats__label">Trie + LRU</div>
-          </div>
-          <div className="stats__item">
-            <div className="stats__value">300ms</div>
-            <div className="stats__label">Debounce</div>
+            <div className="stats__label">Searches this session</div>
           </div>
         </div>
       )}
 
       {/* ——— Footer ——— */}
       <footer className="footer">
-        TypeAhead Search System — Built with React + Go
+        TypeAhead Search System — Built with React + Node.js + TypeScript
       </footer>
 
       {/* ——— Toast ——— */}

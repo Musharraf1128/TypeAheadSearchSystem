@@ -40,6 +40,7 @@ export class BatchWriter {
   private totalEventsQueued: number = 0;
   private totalFlushes: number = 0;
   private totalEventsWritten: number = 0;
+  private totalDbWrites: number = 0;
 
   constructor(
     trie: Trie,
@@ -139,9 +140,14 @@ export class BatchWriter {
 
     this.totalFlushes++;
     this.totalEventsWritten += events.length;
+    this.totalDbWrites += aggregated.size;
 
     if (events.length > 0) {
-      console.log(`Flushed ${events.length} events (${aggregated.size} unique queries)`);
+      const reduction = ((1 - aggregated.size / events.length) * 100).toFixed(1);
+      console.log(
+        `[BatchWriter] Flushed: ${events.length} events → ${aggregated.size} DB writes ` +
+        `(${reduction}% write reduction, ${this.totalFlushes} total flushes)`
+      );
     }
   }
 
@@ -153,12 +159,14 @@ export class BatchWriter {
     totalEventsQueued: number;
     totalFlushes: number;
     totalEventsWritten: number;
+    totalDbWrites: number;
   } {
     return {
       queueSize: this.queue.length,
       totalEventsQueued: this.totalEventsQueued,
       totalFlushes: this.totalFlushes,
       totalEventsWritten: this.totalEventsWritten,
+      totalDbWrites: this.totalDbWrites,
     };
   }
 }

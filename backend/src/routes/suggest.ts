@@ -33,8 +33,10 @@ export function registerSuggestRoute(
         if (cacheResult.hit && cacheResult.value) {
           metrics.incrementDbReads(0); // Cached — no DB read
           const cached = JSON.parse(cacheResult.value);
+          console.log(`[Cache] prefix="${prefix}" → node=${cacheResult.node} → HIT`);
           return reply.send({ suggestions: cached, cached: true, node: cacheResult.node });
         }
+        console.log(`[Cache] prefix="${prefix}" → node=${cacheResult.node} → MISS`);
       } catch {
         // Cache miss or error — fall through to trie
       }

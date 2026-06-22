@@ -104,4 +104,76 @@ export function registerDebugRoutes(
     const trending = trendingEngine.getTopTrending(limit);
     return reply.send({ trending });
   });
+
+  /**
+   * GET /suggest/compare?q=<prefix>
+   * Demonstrates the difference between basic (count-only) and
+   * enhanced (recency-aware) ranking for the same prefix.
+   * Required by assignment §7: "Students should demonstrate the difference
+   * between the two ranking approaches using sample data or logs."
+   */
+  fastify.get('/suggest/compare', async (
+    request: FastifyRequest<{ Querystring: { q?: string } }>,
+    reply: FastifyReply
+  ) => {
+    const prefix = request.query.q?.trim().toLowerCase() || '';
+    if (!prefix) {
+      return reply.status(400).send({ error: 'Missing query param: q' });
+    }
+
+    // Basic ranking: sorted purely by all-time count (descending)
+    const basicResults = trie.search(prefix, 10);
+
+    // Enhanced ranking: augmented with trending scores, sorted by blended score
+    const enhancedResults = trendingEngine.augmentResults(trie.search(prefix, 10));
+    enhancedResults.sort((a, b) => {
+      const scoreA = a.count + (a.trendingScore * 1000);
+      const scoreB = b.count + (b.trendingScore * 1000);
+      return scoreB - scoreA;
+    });
+
+    return reply.send({
+      prefix,
+      basicRanking: {
+        description: 'Sorted by all-time count only',
+        results: basicResults.map((r, i) => ({
+          rank: i + 1,
+          query: r.query,
+          count: r.count,
+        })),
+      },
+      enhancedRanking: {
+        description: 'Sorted by blended score (count + recency-weighted trending)',
+        results: enhancedResults.map((r, i) => ({
+          rank: i + 1,
+          query: r.query,
+          count: r.count,
+          trendingScore: r.trendingScore,
+          blendedScore: r.count + (r.trendingScore * 1000),
+        })),
+      },
+    });
+  });
+
+  /**
+   * GET /batch/stats
+   * Shows batch write reduction evidence.
+   * Required by assignment §8: "Students should show how batch writes
+   * reduce the number of database writes."
+   */
+  fastify.get('/batch/stats', async (_request, reply) => {
+    const batchMetrics = batchWriter.getMetrics();
+    const reduction = batchMetrics.totalEventsQueued > 0
+      ? ((1 - batchMetrics.totalDbWrites / batchMetrics.totalEventsQueued) * 100).toFixed(1)
+      : '0.0';
+
+    return reply.send({
+      totalSearchEvents: batchMetrics.totalEventsQueued,
+      totalDbWrites: batchMetrics.totalDbWrites,
+      totalFlushes: batchMetrics.totalFlushes,
+      writeReductionPercent: `${reduction}%`,
+      explanation: `${batchMetrics.totalEventsQueued} search events were aggregated into ${batchMetrics.totalDbWrites} DB writes across ${batchMetrics.totalFlushes} flushes, reducing writes by ${reduction}%.`,
+      currentQueueSize: batchMetrics.queueSize,
+    });
+  });
 }
